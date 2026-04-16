@@ -1,0 +1,167 @@
+---
+# SkillLink - Application Deployment Playbook
+# Deploys the SkillLink application stack using Docker Compose
+# Usage: ansible-playbook -i inventory.ini playbook-deploy.yml
+
+- name: SkillLink Application Deployment
+  hosts: skilllink_servers
+  become: yes
+  vars:
+    app_dir: "/opt/skilllink"
+    app_user: "skilllink"
+    github_repo: "https://github.com/1DOULOS/SkillLink.git"
+    branch: "main"
+    compose_file: "docker-compose.yml"
+
+  tasks:
+
+    # ── Pull Latest Code ─────────────────────────────────────────────────────
+    - name: Pull latest code from repository
+      git:
+        repo: "{{ github_repo }}"
+        dest: "{{ app_dir }}"
+        version: "{{ branch }}"
+        force: yes
+      become_user: "{{ app_user }}"
+      register: git_result
+
+    - name: Display git pull result
+      debug:
+        msg: "Repository updated: {{ git_result.changed }}"
+
+    # ── Environment Configuration ────────────────────────────────────────────
+    - name: Create .env file for auth-service
+      copy:
+        dest: "{{ app_dir }}/backend/auth-service/.env"
+        content: |
+          PORT=3001
+          DATABASE_URL=postgresql://skilllink:skilllink123@postgres:5432/skilllink_db
+          JWT_SECRET={{ jwt_secret | default('skilllink-jwt-secret-2026-production') }}
+          JWT_REFRESH_SECRET={{ jwt_refresh_secret | default('skilllink-refresh-secret-2026-production') }}
+          JWT_EXPIRES_IN=15m
+          JWT_REFRESH_EXPIRES_IN=7d
+          NODE_ENV=production
+        owner: "{{ app_user }}"
+        mode: '0600'
+
+    - name: Create .env file for user-service
+      copy:
+        dest: "{{ app_dir }}/backend/user-service/.env"
+        content: |
+          PORT=3002
+          DATABASE_URL=postgresql://skilllink:skilllink123@postgres:5432/skilllink_db
+          JWT_SECRET={{ jwt_secret | default('skilllink-jwt-secret-2026-production') }}
+          NODE_ENV=production
+          UPLOAD_DIR=/app/uploads
+          MAX_FILE_SIZE=5242880
+        owner: "{{ app_user }}"
+        mode: '0600'
+
+    - name: Create .env file for job-service
+      copy:
+        dest: "{{ app_dir }}/backend/job-service/.env"
+        content: |
+          PORT=3003
+          DATABASE_URL=postgresql://skilllink:skilllink123@postgres:5432/skilllink_db
+          JWT_SECRET={{ jwt_secret | default('skilllink-jwt-secret-2026-production') }}
+          NODE_ENV=production
+        owner: "{{ app_user }}"
+        mode: '0600'
+
+    - name: Create .env file for matching-service
+      copy:
+        dest: "{{ app_dir }}/backend/matching-service/.env"
+        content: |
+          DATABASE_URL=postgresql://skilllink:skilllink123@postgres:5432/skilllink_db
+          JWT_SECRET={{ jwt_secret | default('skilllink-jwt-secret-2026-production') }}
+          PORT=8000
+        owner: "{{ app_user }}"
+        mode: '0600'
+
+    # ── Build & Deploy ───────────────────────────────────────────────────────
+    - name: Pull latest Docker images
+      command: docker-compose -f {{ compose_file }} pull
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+      ignore_errors: yes
+
+    - name: Build Docker images
+      command: docker-compose -f {{ compose_file }} build --no-cache
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+      register: build_result
+
+    - name: Start database first
+      command: docker-compose -f {{ compose_file }} up -d postgres
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+
+    - name: Wait for database to be healthy
+      command: docker-compose -f {{ compose_file }} exec -T postgres pg_isready -U skilllink
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+      register: db_ready
+      retries: 10
+      delay: 5
+      until: db_ready.rc == 0
+
+    - name: Start all services
+      command: docker-compose -f {{ compose_file }} up -d --remove-orphans
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+
+    - name: Wait for services to be healthy
+      pause:
+        seconds: 15
+
+    # ── Health Checks ────────────────────────────────────────────────────────
+    - name: Check auth-service health
+      uri:
+        url: "http://localhost:3001/health"
+        method: GET
+        status_code: 200
+      register: auth_health
+      retries: 5
+      delay: 5
+      until: auth_health.status == 200
+
+    - name: Check job-service health
+      uri:
+        url: "http://localhost:3003/health"
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 5
+
+    - name: Check matching-service health
+      uri:
+        url: "http://localhost:8000/health"
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 5
+
+    # ── Cleanup ──────────────────────────────────────────────────────────────
+    - name: Remove unused Docker images
+      command: docker image prune -f
+      become_user: "{{ app_user }}"
+      ignore_errors: yes
+
+    - name: Show running containers
+      command: docker-compose -f {{ compose_file }} ps
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+      register: containers_output
+
+    - name: Print deployment status
+      debug:
+        msg: |
+          ✅ SkillLink Deployment Complete!
+          Running containers:
+          {{ containers_output.stdout }}
