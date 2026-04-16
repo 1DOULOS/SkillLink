@@ -1,0 +1,542 @@
+{
+  "info": {
+    "name": "SkillLink API",
+    "description": "Complete API collection for the SkillLink AI-powered job matching platform.\n\nSetup:\n1. Import this collection into Postman\n2. Create an environment with variable `baseUrl` = `http://localhost`\n3. Run 'Auth / Login' first — the collection auto-saves the token\n4. All protected requests use {{accessToken}} automatically",
+    "_postman_id": "skilllink-2026-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "jobId", "value": "", "type": "string" },
+    { "key": "applicationId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@university.cm\",\n  \"password\": \"Pass@123\",\n  \"role\": \"student\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Recruiter",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"recruiter@techcorp.com\",\n  \"password\": \"Pass@123\",\n  \"role\": \"recruiter\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success) {",
+                  "  pm.collectionVariables.set('accessToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+                  "  pm.test('Login successful', () => pm.expect(res.success).to.be.true);",
+                  "  pm.test('Access token received', () => pm.expect(res.data.accessToken).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@university.cm\",\n  \"password\": \"Pass@123\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/refresh",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/auth/change-password",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Pass@123\",\n  \"newPassword\": \"NewPass@456\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Student Profile",
+      "item": [
+        {
+          "name": "Create Student Profile",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/users/student/profile",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Brian\",\n  \"last_name\": \"Njinda\",\n  \"bio\": \"Computer Science student passionate about AI and distributed systems.\",\n  \"location\": \"Yaounde, Cameroon\",\n  \"github_url\": \"https://github.com/1DOULOS\",\n  \"linkedin_url\": \"https://linkedin.com/in/brianjr\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Student Skills",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/users/student/skills",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skills\": [\"React\", \"Node.js\", \"Python\", \"Docker\", \"PostgreSQL\", \"Machine Learning\"]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/student/profile/me",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Upload CV",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/users/student/upload-cv",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "cv", "type": "file", "src": "/path/to/cv.pdf" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Avatar",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/users/student/upload-avatar",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "avatar", "type": "file", "src": "/path/to/photo.jpg" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Recruiter Profile",
+      "item": [
+        {
+          "name": "Create Recruiter Profile",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/users/recruiter/profile",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Alice\",\n  \"last_name\": \"Tech\",\n  \"company_name\": \"TechCorp Cameroon\",\n  \"company_website\": \"https://techcorp.cm\",\n  \"industry\": \"Technology\",\n  \"position\": \"HR Manager\",\n  \"company_description\": \"Leading software company in Central Africa.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Recruiter Profile",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/users/recruiter/profile",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_description\": \"Updated company description.\",\n  \"industry\": \"FinTech\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "Create Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data.id) {",
+                  "  pm.collectionVariables.set('jobId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/jobs",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Machine Learning Engineer\",\n  \"description\": \"We are looking for a talented ML engineer to join our AI team.\",\n  \"requirements\": \"3+ years experience with Python and ML frameworks.\",\n  \"skills_required\": [\"Python\", \"TensorFlow\", \"scikit-learn\", \"pandas\", \"Docker\"],\n  \"location\": \"Yaounde, Cameroon\",\n  \"job_type\": \"full-time\",\n  \"salary_min\": 500000,\n  \"salary_max\": 800000,\n  \"deadline\": \"2026-06-30\",\n  \"status\": \"active\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Browse Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs?search=engineer&location=Yaounde&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"],
+              "query": [
+                { "key": "search", "value": "engineer" },
+                { "key": "location", "value": "Yaounde" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "Update Job",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Machine Learning Engineer\",\n  \"salary_max\": 1000000\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Jobs (Recruiter)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/jobs/my-jobs",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Update Job Status",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/status",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"closed\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Job",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Submit Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data.id) {",
+                  "  pm.collectionVariables.set('applicationId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/applications",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": \"{{jobId}}\",\n  \"cover_note\": \"I am very interested in this ML Engineer role. My skills in Python and scikit-learn directly match your requirements.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Applications (Student)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/applications/my-applications",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Job Applicants (Recruiter)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/applications/job/{{jobId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Update Application Status",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/status",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shortlisted\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Matching",
+      "item": [
+        {
+          "name": "Get AI-Ranked Job Feed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/match/jobs?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "match", "jobs"],
+              "query": [{ "key": "limit", "value": "20" }]
+            },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ranked Candidates for Job",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/match/candidates/{{jobId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Compute Match Score",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/match/score",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"<student-uuid>\",\n  \"job_id\": \"{{jobId}}\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/admin/users/<user-uuid>/deactivate",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/admin/users/<user-uuid>/activate",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Auth Service Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/health" },
+          "response": []
+        },
+        {
+          "name": "User Service Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/users/health" },
+          "response": []
+        },
+        {
+          "name": "Job Service Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/jobs/health" },
+          "response": []
+        },
+        {
+          "name": "Matching Service Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/match/health" },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
