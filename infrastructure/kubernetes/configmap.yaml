@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skilllink-config
+  namespace: skilllink
+data:
+  NODE_ENV: "production"
+  JWT_EXPIRES_IN: "15m"
+  JWT_REFRESH_EXPIRES_IN: "7d"
+  POSTGRES_DB: "skilllink_db"
+  POSTGRES_USER: "skilllink"
+  PORT_AUTH: "3001"
+  PORT_USER: "3002"
+  PORT_JOB: "3003"
+  PORT_MATCHING: "8000"
