@@ -1,0 +1,222 @@
+---
+# SkillLink - Server Setup Playbook
+# Provisions and configures the VPS for SkillLink deployment
+# Usage: ansible-playbook -i inventory.ini playbook-setup.yml
+
+- name: SkillLink Server Setup
+  hosts: skilllink_servers
+  become: yes
+  vars:
+    docker_compose_version: "2.24.0"
+    node_version: "20"
+    app_user: "skilllink"
+    app_dir: "/opt/skilllink"
+    domain: "skilllink.example.com"
+    # Auto-detect architecture: amd64 for x86_64, arm64 for aarch64 (Oracle Free Tier)
+    docker_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    compose_arch: "{{ 'aarch64' if ansible_architecture == 'aarch64' else 'x86_64' }}"
+
+  tasks:
+
+    # ── System Updates ──────────────────────────────────────────────────────
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Install essential system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+          - wget
+          - unzip
+          - htop
+          - net-tools
+          - ufw
+          - fail2ban
+          - software-properties-common
+        state: present
+
+    # ── Firewall Configuration ──────────────────────────────────────────────
+    - name: Configure UFW default deny
+      ufw:
+        default: deny
+        direction: incoming
+
+    - name: Allow SSH
+      ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Allow HTTP
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow HTTPS
+      ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    # ── Docker Installation ─────────────────────────────────────────────────
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch={{ docker_arch }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker CE
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install Docker Compose standalone
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v{{ docker_compose_version }}/docker-compose-linux-{{ compose_arch }}"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    # ── Application User Setup ──────────────────────────────────────────────
+    - name: Create skilllink application user
+      user:
+        name: "{{ app_user }}"
+        groups: docker
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Create uploads directory
+      file:
+        path: "{{ app_dir }}/uploads"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    # ── Nginx Installation (for SSL termination if not using Docker Nginx) ──
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start and enable Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    # ── Node.js Installation (for development/scripts) ──────────────────────
+    - name: Add NodeSource repository
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
+      args:
+        creates: /etc/apt/sources.list.d/nodesource.list
+
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+
+    # ── Python Installation ─────────────────────────────────────────────────
+    - name: Install Python 3 and pip
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+        state: present
+
+    # ── Security Hardening ──────────────────────────────────────────────────
+    - name: Configure fail2ban
+      copy:
+        dest: /etc/fail2ban/jail.local
+        content: |
+          [DEFAULT]
+          bantime = 3600
+          findtime = 600
+          maxretry = 5
+
+          [sshd]
+          enabled = true
+          port = ssh
+          logpath = %(sshd_log)s
+          backend = %(sshd_backend)s
+
+    - name: Start and enable fail2ban
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+    # ── Git Setup ───────────────────────────────────────────────────────────
+    - name: Configure git safe directory
+      git_config:
+        name: safe.directory
+        scope: global
+        value: "{{ app_dir }}"
+
+    - name: Clone or update SkillLink repository
+      git:
+        repo: "https://github.com/1DOULOS/SkillLink.git"
+        dest: "{{ app_dir }}"
+        version: main
+        force: yes
+      become_user: "{{ app_user }}"
+      ignore_errors: yes
+
+    # ── System Limits ───────────────────────────────────────────────────────
+    - name: Configure system limits for high traffic
+      pam_limits:
+        domain: '*'
+        limit_type: '-'
+        limit_item: nofile
+        value: '65536'
+
+    - name: Print setup completion message
+      debug:
+        msg: |
+          ✅ SkillLink Server Setup Complete!
+          Server IP: {{ ansible_host }}
+          App Directory: {{ app_dir }}
+          Docker: Installed
+          Node.js: v{{ node_version }}
+          UFW Firewall: Enabled (ports 22, 80, 443)
+          Next step: Run playbook-deploy.yml
