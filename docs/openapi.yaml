@@ -1,0 +1,915 @@
+openapi: 3.0.3
+info:
+  title: SkillLink API
+  description: |
+    AI-powered job matching platform REST API.
+    Built with Node.js/Express (auth, user, job services) and Python/FastAPI (matching service).
+    All protected routes require a Bearer JWT token obtained from POST /api/auth/login.
+  version: 1.0.0
+  contact:
+    name: SkillLink Team
+    url: https://github.com/1DOULOS/SkillLink
+
+servers:
+  - url: http://localhost/api
+    description: Local Docker Compose (via Nginx :80)
+  - url: http://localhost:3001/api/auth
+    description: Auth Service (direct)
+  - url: http://localhost:3002/api
+    description: User Service (direct)
+  - url: http://localhost:3003/api
+    description: Job Service (direct)
+  - url: http://localhost:8000/api
+    description: Matching Service (direct)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        message:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [student, recruiter, admin]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    StudentProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        bio:
+          type: string
+        location:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        education:
+          type: array
+          items:
+            type: object
+        experience:
+          type: array
+          items:
+            type: object
+        cv_url:
+          type: string
+        avatar_url:
+          type: string
+        github_url:
+          type: string
+        linkedin_url:
+          type: string
+
+    RecruiterProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        company_name:
+          type: string
+        company_website:
+          type: string
+        industry:
+          type: string
+        position:
+          type: string
+        company_description:
+          type: string
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        recruiter_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        requirements:
+          type: string
+        skills_required:
+          type: array
+          items:
+            type: string
+        location:
+          type: string
+        job_type:
+          type: string
+          enum: [full-time, part-time, contract, internship, remote]
+        salary_min:
+          type: number
+        salary_max:
+          type: number
+        deadline:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, closed, draft]
+        created_at:
+          type: string
+          format: date-time
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+          format: uuid
+        cover_note:
+          type: string
+        status:
+          type: string
+          enum: [pending, shortlisted, accepted, rejected]
+        created_at:
+          type: string
+          format: date-time
+
+    MatchResult:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        match_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        skill_match:
+          type: number
+        text_similarity:
+          type: number
+        matched_skills:
+          type: array
+          items:
+            type: string
+        missing_skills:
+          type: array
+          items:
+            type: string
+
+tags:
+  - name: Auth
+    description: Authentication and token management
+  - name: Students
+    description: Student profile and skills management
+  - name: Recruiters
+    description: Recruiter profile management
+  - name: Admin
+    description: Admin user management
+  - name: Jobs
+    description: Job posting CRUD and browsing
+  - name: Applications
+    description: Job application management
+  - name: Matching
+    description: AI-powered job matching engine
+
+paths:
+  # ─── AUTH ──────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: student@university.cm
+                password:
+                  type: string
+                  minLength: 8
+                  example: Pass@123
+                role:
+                  type: string
+                  enum: [student, recruiter]
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and receive JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: student@university.cm
+                password:
+                  type: string
+                  example: Pass@123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          accessToken:
+                            type: string
+                          refreshToken:
+                            type: string
+                          user:
+                            $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New token pair issued
+        '401':
+          description: Invalid or expired refresh token
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout and invalidate refresh token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+        '401':
+          description: Unauthorized
+
+  /auth/change-password:
+    put:
+      tags: [Auth]
+      summary: Change user password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password changed successfully
+        '401':
+          description: Current password incorrect
+
+  # ─── STUDENTS ──────────────────────────────────────────────────────────────
+  /users/student/profile:
+    post:
+      tags: [Students]
+      summary: Create student profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentProfile'
+      responses:
+        '201':
+          description: Profile created
+    put:
+      tags: [Students]
+      summary: Update student profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentProfile'
+      responses:
+        '200':
+          description: Profile updated
+
+  /users/student/profile/{userId}:
+    get:
+      tags: [Students]
+      summary: Get student profile by user ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/StudentProfile'
+        '404':
+          description: Profile not found
+
+  /users/student/skills:
+    put:
+      tags: [Students]
+      summary: Update student skills
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  example: ["React", "Python", "Docker", "PostgreSQL"]
+      responses:
+        '200':
+          description: Skills updated
+
+  /users/student/upload-cv:
+    post:
+      tags: [Students]
+      summary: Upload CV (PDF, max 10MB)
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                cv:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: CV uploaded successfully
+        '400':
+          description: Invalid file type or size exceeded
+
+  /users/student/upload-avatar:
+    post:
+      tags: [Students]
+      summary: Upload avatar image (max 5MB)
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar uploaded successfully
+
+  # ─── RECRUITERS ────────────────────────────────────────────────────────────
+  /users/recruiter/profile:
+    post:
+      tags: [Recruiters]
+      summary: Create recruiter profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecruiterProfile'
+      responses:
+        '201':
+          description: Recruiter profile created
+    put:
+      tags: [Recruiters]
+      summary: Update recruiter profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecruiterProfile'
+      responses:
+        '200':
+          description: Profile updated
+
+  # ─── ADMIN ─────────────────────────────────────────────────────────────────
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Get all users (paginated)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [student, recruiter, admin]
+      responses:
+        '200':
+          description: Paginated users list
+        '403':
+          description: Admin role required
+
+  /admin/users/{userId}/activate:
+    put:
+      tags: [Admin]
+      summary: Activate a user account
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User activated
+
+  /admin/users/{userId}/deactivate:
+    put:
+      tags: [Admin]
+      summary: Deactivate a user account
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User deactivated
+
+  # ─── JOBS ──────────────────────────────────────────────────────────────────
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: Browse active job listings
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: location
+          schema:
+            type: string
+        - in: query
+          name: job_type
+          schema:
+            type: string
+            enum: [full-time, part-time, contract, internship, remote]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of active jobs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          jobs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Job'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+    post:
+      tags: [Jobs]
+      summary: Create a new job posting (recruiter only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        '201':
+          description: Job created
+        '403':
+          description: Recruiter role required
+
+  /jobs/{jobId}:
+    get:
+      tags: [Jobs]
+      summary: Get job by ID
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job details
+        '404':
+          description: Job not found
+    put:
+      tags: [Jobs]
+      summary: Update job posting (owner only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        '200':
+          description: Job updated
+        '403':
+          description: Not the job owner
+    delete:
+      tags: [Jobs]
+      summary: Delete job posting (owner only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job deleted
+        '403':
+          description: Not the job owner
+
+  /jobs/my-jobs:
+    get:
+      tags: [Jobs]
+      summary: Get recruiter's own job listings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Recruiter's jobs
+
+  /jobs/{jobId}/status:
+    put:
+      tags: [Jobs]
+      summary: Update job status (active/closed/draft)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, closed, draft]
+      responses:
+        '200':
+          description: Status updated
+
+  # ─── APPLICATIONS ──────────────────────────────────────────────────────────
+  /applications:
+    post:
+      tags: [Applications]
+      summary: Submit a job application (student only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [job_id]
+              properties:
+                job_id:
+                  type: string
+                  format: uuid
+                cover_note:
+                  type: string
+      responses:
+        '201':
+          description: Application submitted
+        '409':
+          description: Already applied to this job
+
+  /applications/my-applications:
+    get:
+      tags: [Applications]
+      summary: Get student's own applications
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, shortlisted, accepted, rejected]
+      responses:
+        '200':
+          description: Student applications list
+
+  /applications/job/{jobId}:
+    get:
+      tags: [Applications]
+      summary: Get all applicants for a job (recruiter, owner only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ranked applicants list
+        '403':
+          description: Not the job owner
+
+  /applications/{applicationId}/status:
+    put:
+      tags: [Applications]
+      summary: Update application status (recruiter only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: applicationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, shortlisted, accepted, rejected]
+      responses:
+        '200':
+          description: Application status updated
+
+  # ─── MATCHING ──────────────────────────────────────────────────────────────
+  /match/jobs:
+    get:
+      tags: [Matching]
+      summary: Get AI-ranked job feed for authenticated student
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            description: Max number of ranked jobs to return
+      responses:
+        '200':
+          description: AI-ranked list of jobs with match scores
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Job'
+                            - $ref: '#/components/schemas/MatchResult'
+
+  /match/candidates/{jobId}:
+    get:
+      tags: [Matching]
+      summary: Get AI-ranked candidates for a job (recruiter only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ranked candidates with match scores
+
+  /match/score:
+    post:
+      tags: [Matching]
+      summary: Compute match score for a student-job pair
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, job_id]
+              properties:
+                student_id:
+                  type: string
+                  format: uuid
+                job_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Match score result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MatchResult'
