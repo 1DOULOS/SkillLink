@@ -72,8 +72,7 @@ _STUDENT_PROFILE_SQL = """
         sp.experience,
         sp.location,
         sp.github_url,
-        sp.linkedin_url,
-        sp.portfolio_url
+        sp.linkedin_url
     FROM student_profiles sp
     JOIN users u ON u.id = sp.user_id
     WHERE sp.user_id = %s
@@ -85,18 +84,17 @@ _ACTIVE_JOBS_SQL = """
         j.title,
         j.description,
         j.requirements,
-        j.responsibilities,
         j.skills_required,
         j.job_type,
         j.location,
         j.salary_min,
         j.salary_max,
-        j.is_active,
+        j.status,
         rp.company_name,
         rp.company_description
     FROM jobs j
     JOIN recruiter_profiles rp ON rp.user_id = j.recruiter_id
-    WHERE j.is_active = TRUE
+    WHERE j.status = 'active'
 """
 
 _JOB_BY_ID_SQL = """
@@ -105,13 +103,12 @@ _JOB_BY_ID_SQL = """
         j.title,
         j.description,
         j.requirements,
-        j.responsibilities,
         j.skills_required,
         j.job_type,
         j.location,
         j.salary_min,
         j.salary_max,
-        j.is_active,
+        j.status,
         j.recruiter_id,
         rp.company_name
     FROM jobs j
@@ -204,7 +201,7 @@ async def get_jobs_for_student(
                 "salary_min": item.get("salary_min"),
                 "salary_max": item.get("salary_max"),
                 "skills_required": item.get("skills_required", []),
-                "is_active": item.get("is_active", True),
+                "status": item.get("status", "active"),
                 "score": m["score"],
                 "skill_match": m["skill_match"],
                 "text_similarity": m["text_similarity"],
@@ -422,7 +419,7 @@ async def get_recommendations(
                 "salary_min": item.get("salary_min"),
                 "salary_max": item.get("salary_max"),
                 "skills_required": item.get("skills_required", []),
-                "is_active": item.get("is_active", True),
+                "status": item.get("status", "active"),
                 "score": m["score"],
                 "skill_match": m["skill_match"],
                 "text_similarity": m["text_similarity"],

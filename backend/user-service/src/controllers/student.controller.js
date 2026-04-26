@@ -121,7 +121,7 @@ const updateProfile = async (req, res) => {
     if (location !== undefined) { updates.push(`location = $${paramIndex++}`); values.push(location); }
     if (github_url !== undefined) { updates.push(`github_url = $${paramIndex++}`); values.push(github_url); }
     if (linkedin_url !== undefined) { updates.push(`linkedin_url = $${paramIndex++}`); values.push(linkedin_url); }
-    if (skills !== undefined) { updates.push(`skills = $${paramIndex++}`); values.push(JSON.stringify(skills)); }
+    if (skills !== undefined) { updates.push(`skills = $${paramIndex++}`); values.push(skills); }
 
     if (updates.length === 0) {
       return res.status(400).json({
