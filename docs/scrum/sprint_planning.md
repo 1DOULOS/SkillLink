@@ -201,3 +201,124 @@ A user story is considered Done only when ALL of the following are true:
 | Day 9 (14 May) | 6 |
 | Day 11 (16 May) | 1 |
 | Day 14 (20 May) | 0 ✅ |
+
+---
+
+## Burndown Charts (Visual)
+
+> Each chart shows **Ideal burndown** (straight line from total to 0) vs **Actual burndown** (real progress).
+> X-axis = sprint days (1–14) | Y-axis = story points remaining
+
+### Sprint 1 Burndown Chart — 19 Points
+
+```
+Points
+  19 |█━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   ← Ideal (straight line)
+     |  \
+  16 |    ●                                        ← Actual
+     |     \
+  13 |      \   (ideal)
+     |       ●
+  10 |        \
+     |         \
+   7 |           ●
+     |            \
+   4 |             \
+     |              ●
+   1 |               \
+     |                ●━━━●
+   0 +─────────────────────────────────────────→ Days
+     D1   D3   D5   D7   D9   D11  D14
+
+     ● Actual  ━ Ideal
+     Result: Completed 1 day ahead of schedule ✅
+```
+
+### Sprint 2 Burndown Chart — 41 Points
+
+```
+Points
+  41 |█━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   ← Ideal
+     |●\
+  35 |  \●
+     |    \
+  29 |     \●
+     |      \
+  23 |       \●
+     |        \
+  17 |         \●
+     |          \
+  11 |           \●
+     |            \
+   5 |             \
+     |              ●
+   0 +─────────────────────────────────────────→ Days
+     D1   D3   D5   D7   D9   D11  D14
+
+     Result: Steady pace, completed on schedule ✅
+```
+
+### Sprint 3 Burndown Chart — 42 Points
+
+```
+Points
+  42 |●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   ← Ideal
+     | \
+  34 |  ●
+     |   \
+  27 |    ●   ← slight lag D5 (AI algorithm complexity)
+     |    ·\
+  21 |    ·  ●
+     |    ·   \
+  14 |    ·    ●   ← recovered pace D9
+     |         \
+   7 |          ●
+     |           \
+   2 |            ●
+     |             \
+   0 +──────────────●───────────────────────────→ Days
+     D1   D3   D5   D7   D9   D11  D14
+
+     · = below ideal line (temporary lag)
+     Result: 1-day lag mid-sprint recovered by D11 ✅
+```
+
+### Sprint 4 Burndown Chart — 39 Points
+
+```
+Points
+  39 |●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   ← Ideal
+     | \
+  31 |  ●
+     |   \
+  24 |    ●   ← ahead of ideal D5
+     |    ·\
+  17 |       ●   ← on track D7
+     |        \
+  11 |         ●
+     |          \
+   5 |           ●
+     |            \
+   1 |             ●
+     |              \
+   0 +───────────────●───────────────────────────→ Days
+     D1   D3   D5   D7   D9   D11  D14
+
+     Result: Completed with 3 days to spare ✅
+```
+
+### Velocity Trend
+
+```
+Story Points Completed per Sprint:
+
+Sprint 4 (39) |███████████████████████████████████████
+Sprint 3 (42) |██████████████████████████████████████████
+Sprint 2 (41) |█████████████████████████████████████████
+Sprint 1 (19) |███████████████████
+              |────────────────────────────────────────→
+              0        10        20        30        40
+
+Average velocity: 35.25 points/sprint
+Total delivered:  141 points across 4 sprints (100% commitment rate)
+```
