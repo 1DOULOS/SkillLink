@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const { query } = require('../config/db');
 const logger = require('../config/logger');
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12;
 const JWT_SECRET = process.env.JWT_SECRET || 'skilllink-jwt-secret-2026-production';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'skilllink-refresh-secret-2026-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
