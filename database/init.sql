@@ -98,6 +98,11 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs(job_type);
 CREATE INDEX IF NOT EXISTS idx_jobs_recruiter ON jobs(recruiter_id);
 CREATE INDEX IF NOT EXISTS idx_applications_student ON applications(student_id);
+
+-- GIN indexes for full-text search on jobs
+CREATE INDEX IF NOT EXISTS idx_jobs_skills_gin ON jobs USING GIN(skills_required);
+CREATE INDEX IF NOT EXISTS idx_jobs_description_gin ON jobs USING GIN(to_tsvector('english', description));
+CREATE INDEX IF NOT EXISTS idx_student_skills_gin ON student_profiles USING GIN(skills);
 CREATE INDEX IF NOT EXISTS idx_applications_job ON applications(job_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
