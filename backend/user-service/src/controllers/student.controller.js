@@ -342,11 +342,7 @@ const getAllStudents = async (req, res) => {
         LOWER(sp.last_name) LIKE $${paramIndex} OR
         LOWER(u.email) LIKE $${paramIndex} OR
         EXISTS (
-          SELECT 1 FROM jsonb_array_elements_text(
-            CASE WHEN sp.skills IS NULL THEN '[]'::jsonb
-                 WHEN jsonb_typeof(sp.skills::jsonb) = 'array' THEN sp.skills::jsonb
-                 ELSE '[]'::jsonb END
-          ) skill WHERE LOWER(skill) LIKE $${paramIndex}
+          SELECT 1 FROM unnest(sp.skills) AS skill WHERE LOWER(skill) LIKE $${paramIndex}
         )
       )`;
       queryParams.push(`%${search.toLowerCase()}%`);
