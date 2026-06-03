@@ -51,6 +51,3 @@ json/
 gen_*.js
 patch_*.js
 svgs.js
-node_modules/
-package-lock.json
-package.json

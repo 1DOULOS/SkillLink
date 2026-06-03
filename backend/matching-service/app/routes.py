@@ -64,8 +64,8 @@ _STUDENT_PROFILE_SQL = """
     SELECT
         sp.id                 AS student_id,
         u.email,
-        u.first_name,
-        u.last_name,
+        sp.first_name,
+        sp.last_name,
         sp.bio,
         sp.skills,
         sp.education,
@@ -120,8 +120,8 @@ _ALL_STUDENTS_SQL = """
     SELECT
         sp.id                 AS student_id,
         u.email,
-        u.first_name,
-        u.last_name,
+        sp.first_name,
+        sp.last_name,
         sp.bio,
         sp.skills,
         sp.education,
@@ -295,8 +295,8 @@ async def compute_score(
         SELECT
             sp.id AS student_id,
             u.email,
-            u.first_name,
-            u.last_name,
+            sp.first_name,
+            sp.last_name,
             sp.bio,
             sp.skills,
             sp.education,
@@ -377,8 +377,8 @@ async def get_recommendations(
         SELECT
             sp.id AS student_id,
             u.email,
-            u.first_name,
-            u.last_name,
+            sp.first_name,
+            sp.last_name,
             sp.bio,
             sp.skills,
             sp.education,

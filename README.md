@@ -76,8 +76,8 @@ docker compose up --build -d
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@skilllink.com | password |
-| Recruiter | recruiter@techcorp.com | Pass@123 |
-| Student | student@university.cm | Pass@123 |
+| Recruiter | recruiter@techcorp.com | password |
+| Student | student@university.cm | password |
 
 ---
 

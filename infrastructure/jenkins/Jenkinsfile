@@ -40,21 +40,21 @@ pipeline {
                 stage('Auth Service') {
                     steps {
                         dir('backend/auth-service') {
-                            sh 'npm ci'
+                            sh 'npm install'
                         }
                     }
                 }
                 stage('User Service') {
                     steps {
                         dir('backend/user-service') {
-                            sh 'npm ci'
+                            sh 'npm install'
                         }
                     }
                 }
                 stage('Job Service') {
                     steps {
                         dir('backend/job-service') {
-                            sh 'npm ci'
+                            sh 'npm install'
                         }
                     }
                 }
@@ -68,7 +68,7 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         dir('frontend') {
-                            sh 'npm ci'
+                            sh 'npm install'
                         }
                     }
                 }
