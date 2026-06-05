@@ -326,6 +326,101 @@ SkillLink/
 
 ---
 
+## Contributing
+
+SkillLink is an academic project submitted for SEN3244 Software Architecture at ICT University. Contributions, suggestions, and issues are welcome.
+
+### Branching Strategy
+
+```
+main          ← production-ready code only
+develop       ← integration branch (all features merge here first)
+feat/<name>   ← feature branches (branch from develop)
+fix/<name>    ← bug fix branches
+docs/<name>   ← documentation-only changes
+```
+
+### Contribution Workflow
+
+1. **Fork** the repository and create a branch from `develop`:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feat/your-feature-name
+   ```
+
+2. **Code** your change, keeping each service self-contained:
+   - Backend changes → only modify files inside the relevant service directory
+   - Frontend changes → only modify files inside `frontend/src/`
+   - Infrastructure changes → update `infrastructure/` and document in `docs/`
+
+3. **Test** before pushing:
+   ```bash
+   # Node.js services
+   cd backend/<service> && npm test
+
+   # Python matching service
+   cd backend/matching-service && pytest tests/ -v --cov=app --cov-fail-under=80
+
+   # Frontend
+   cd frontend && npm test
+   ```
+   All tests must pass. Coverage must stay ≥ 80% (enforced by CI).
+
+4. **Commit** using Conventional Commits format:
+   ```
+   feat(auth): add OAuth2 Google login
+   fix(matching): prevent division by zero when job has no skills
+   docs(readme): update quick start instructions
+   test(job-service): add integration tests for application routes
+   chore(k8s): bump matching-service maxReplicas to 15
+   ```
+
+5. **Open a Pull Request** against `develop`:
+   - Describe what changed and why
+   - Link to the relevant Trello card or issue
+   - At least one reviewer must approve before merging
+   - All Jenkins CI checks must be green
+
+### Code Standards
+
+| Language | Linter | Format |
+|----------|--------|--------|
+| JavaScript | ESLint (Airbnb config) | `npm run lint` |
+| Python | flake8 (PEP 8) | `flake8 app/` |
+| TypeScript | ESLint + tsc | `npm run lint && npm run type-check` |
+
+### Reporting Issues
+
+Open a GitHub Issue with:
+- **Title:** Short summary of the problem
+- **Steps to reproduce**
+- **Expected vs actual behaviour**
+- **Logs** (attach relevant Docker logs: `docker compose logs <service>`)
+- **Environment** (Docker Compose / Kubernetes / local dev)
+
+### Team Contacts
+
+| Role | Name | GitHub |
+|------|------|--------|
+| Product Owner | NJINDA BRIAN JR | [@1DOULOS](https://github.com/1DOULOS) |
+| Scrum Master | ETIMBI ZANGUE ANGE | [@angecatti](https://github.com/angecatti) |
+
+---
+
+## Documentation Index
+
+| Document | Location | Description |
+|----------|----------|-------------|
+| API Reference (OpenAPI 3.0) | [`docs/openapi.yaml`](docs/openapi.yaml) | All 35+ endpoints with schemas |
+| Postman Collection | [`docs/SkillLink.postman_collection.json`](docs/SkillLink.postman_collection.json) | Import into Postman for live testing |
+| Architecture Document | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Component/deployment/module views, trade-offs |
+| CI/CD Pipeline Guide | [`docs/PIPELINE.md`](docs/PIPELINE.md) | Jenkins 8-stage pipeline explained |
+| Monitoring Guide | [`docs/MONITORING.md`](docs/MONITORING.md) | Prometheus metrics, Grafana panels, alert rules |
+| Scrum Artifacts | [`docs/scrum/sprint_planning.md`](docs/scrum/sprint_planning.md) | All 4 sprints, burndown charts, retrospectives |
+
+---
+
 ## License
 
 MIT — Built for SEN3244 Software Architecture, ICT University, Spring 2026.
